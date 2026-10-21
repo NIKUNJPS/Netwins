@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Seat Booking</title>
+<style>
+  :root {
+    --text: #1e2235;
+    --muted: #6b7280;
+    --border: #e3e6ee;
+    --soft: #f6f7fb;
+    --blue: #4a6cf7;
+    --green: #22a04b;
+    --green-soft: #e8f6ed;
+    --red: #dc3545;
+    --red-soft: #fdecee;
+    --empty: #d9dce3;
+    --gold: #f5b301;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 40px; background: #fff; color: var(--text); font-family: "Segoe UI", Arial, sans-serif; }
+  .page { max-width: 1000px; margin: 0 auto; display: grid; gap: 16px; }
+
+  header { text-align: center; }
+  header h1 { margin: 0; font-size: 28px; letter-spacing: .5px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; box-shadow: 0 2px 8px rgba(30, 34, 53, .07); }
+  .card h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+  .controls { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+  .controls form { display: flex; flex-direction: column; gap: 10px; }
+  .fields { display: flex; gap: 10px; }
+  label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  input { width: 100%; padding: 9px 11px; border: 2px solid #cfd3de; border-radius: 8px; background: #fff; font-size: 15px; color: var(--text); }
+  input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(74, 108, 247, .15); }
+  button { padding: 10px; border: none; border-radius: 8px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; background: var(--blue); }
+  button:hover { filter: brightness(.93); }
+  button:active { transform: scale(.98); }
+  .btn-book { background: var(--green); }
+  .btn-cancel { background: var(--red); }
+
+  .message { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--soft); font-family: Consolas, monospace; font-size: 17px; font-weight: 700; letter-spacing: 1px; }
+  .message .tag { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .message.ok { background: var(--green-soft); border-color: #b7e2c4; color: var(--green); }
+  .message.info { background: #eaf0ff; border-color: #c3d1fb; color: var(--blue); }
+  .message.error { background: var(--red-soft); border-color: #f5c2c7; color: var(--red); }
+
+  .main { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+  .side { display: grid; gap: 16px; }
+
+  .screen { width: 80%; margin: 0 auto 18px; padding: 5px; text-align: center; background: #ccd1dc; color: #555; border-radius: 0 0 40px 40px; font-size: 11px; letter-spacing: 6px; }
+  .map { display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .seat-row { display: flex; align-items: center; gap: 6px; }
+  .row-label { width: 20px; text-align: center; font-weight: 700; color: var(--muted); }
+  .seat { width: 46px; flex-shrink: 0; padding: 6px 0; text-align: center; font-size: 13px; background: var(--empty); border-radius: 8px 8px 3px 3px; transition: transform .15s; }
+  .seat small { display: block; font-size: 10px; }
+  .seat.booked { background: var(--green); color: #fff; font-weight: 700; cursor: pointer; }
+  .seat.booked:hover { transform: translateY(-2px); }
+  .seat.new { box-shadow: 0 0 0 3px var(--gold); }
+  .legend { display: flex; justify-content: center; gap: 18px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 12px; margin-right: 6px; border-radius: 3px; vertical-align: middle; background: var(--empty); }
+  .legend i.booked { background: var(--green); }
+  .legend i.new { background: var(--green); box-shadow: 0 0 0 2px var(--gold); }
+
+  .big { font-size: 34px; font-weight: 800; color: var(--blue); line-height: 1; }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  .bookings { display: flex; flex-direction: column; gap: 6px; }
+  .bk { display: flex; gap: 10px; align-items: center; padding: 7px 10px; border: 1px solid #b7e2c4; background: var(--green-soft); border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .bk:hover { border-color: var(--red); background: var(--red-soft); }
+  .bk b { background: var(--green); color: #fff; padding: 1px 8px; border-radius: 5px; font-size: 12px; }
+  .none { color: var(--muted); font-size: 14px; }
+  .hint { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+  .table-wrap { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { position: sticky; top: 0; background: var(--soft); text-align: left; padding: 8px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  td { padding: 8px 12px; border-top: 1px solid var(--border); }
+  td.msg { font-family: Consolas, monospace; font-weight: 700; }
+  td.ok { color: var(--green); }
+  td.info { color: var(--blue); }
+  td.error { color: var(--red); }
+  tr:last-child td { background: #fffbea; }
+
+  @media (max-width: 800px) {
+    .controls, .main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>🎬 Movie Seat Booking</h1>
+    <p>Seats in a booking are always together in one row</p>
+  </header>
+
+  <div class="controls">
+    <form id="setupForm" class="card" autocomplete="off">
+      <h2>Set up cinema</h2>
+      <div class="fields">
+        <label>Rows <input id="rowsBox" value="3"></label>
+        <label>Seats per row <input id="seatsBox" value="5"></label>
+      </div>
+      <button>Set</button>
+    </form>
+
+    <form id="bookForm" class="card" autocomplete="off">
+      <h2>Book seats</h2>
+      <label>How many seats <input id="bookBox" placeholder="e.g. 3"></label>
+      <button class="btn-book">Book</button>
+    </form>
+
+    <form id="cancelForm" class="card" autocomplete="off">
+      <h2>Cancel booking</h2>
+      <label>Booking number <input id="cancelBox" placeholder="e.g. 2"></label>
+      <button class="btn-cancel">Cancel</button>
+    </form>
+  </div>
+
+  <div id="last" class="message"><span class="tag">Last message</span><span id="lastText">-</span></div>
+
+  <div class="main">
+    <section class="card">
+      <h2>Seat map</h2>
+      <div class="screen">SCREEN</div>
+      <div id="map" class="map"></div>
+      <div class="legend">
+        <span><i></i>Empty</span>
+        <span><i class="booked"></i>Booked</span>
+        <span><i class="new"></i>Just booked</span>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="card">
+        <h2>Empty seats</h2>
+        <div id="empty" class="big">0</div>
+        <div id="emptySub" class="sub"></div>
+      </section>
+      <section class="card">
+        <h2>Bookings now</h2>
+        <div id="bookings" class="bookings"></div>
+        <div class="hint">Click a booking or a green seat to fill the Cancel box.</div>
+      </section>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>History (every action, in order)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Message</th><th>Empty</th></tr></thead>
+        <tbody id="history"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =====================================================================
+   LOGIC - data and rules only, no screen code
+   ===================================================================== */
+var Cinema = (function () {
+  var grid = [];       // grid[row][col] = 0 (empty) or booking number
+  var bookings = {};   // booking number -> list of seat names
+  var nextId = 1;
+
+  function seatName(row, col) {
+    return String.fromCharCode(65 + row) + (col + 1);
+  }
+
+  // Whole number greater than 0. Rejects blank, 0, negative, decimals and text.
+  function toCount(text) {
+    var value = String(text).trim();
+    if (!/^[0-9]+$/.test(value)) return 0;
+    return Number(value);
+  }
+
+  function setup(rowsText, seatsText) {
+    var rows = toCount(rowsText);
+    var seats = toCount(seatsText);
+    if (!rows || !seats || rows > 26) return "INVALID SETUP";
+
+    grid = [];
+    for (var r = 0; r < rows; r++) grid.push(new Array(seats).fill(0));
+    bookings = {};
+    nextId = 1;
+    return "CINEMA SET: " + rows + " rows x " + seats + " seats";
+  }
+
+  // First row (A, B, C...) with k empty seats side by side; leftmost block. Null if none.
+  function findSeats(k) {
+    for (var r = 0; r < grid.length; r++) {
+      var run = 0;
+      for (var c = 0; c < grid[r].length; c++) {
+        run = grid[r][c] === 0 ? run + 1 : 0;
+        if (run === k) return { row: r, col: c - k + 1 };
+      }
+    }
+    return null;
+  }
+
+  function book(text) {
+    var k = toCount(text);
+    if (!k) return "INVALID COUNT";
+    var spot = findSeats(k);
+    if (!spot) return "NO SEATS TOGETHER";
+
+    var id = nextId++;
+    var names = [];
+    for (var c = spot.col; c < spot.col + k; c++) {
+      grid[spot.row][c] = id;
+      names.push(seatName(spot.row, c));
+    }
+    bookings[id] = names;
+    return "BOOKED " + id + ": " + names.join(" ");
+  }
+
+  function cancel(text) {
+    var id = toCount(text);
+    if (!id) return "INVALID BOOKING";
+    if (!bookings[id]) return "BOOKING NOT FOUND";
+
+    grid.forEach(function (row) {
+      row.forEach(function (s, c) { if (s === id) row[c] = 0; });
+    });
+    var names = bookings[id];
+    delete bookings[id];
+    return "CANCELLED " + id + ": " + names.join(" ");
+  }
+
+  function emptyCount() {
+    return grid.reduce(function (n, row) {
+      return n + row.filter(function (s) { return s === 0; }).length;
+    }, 0);
+  }
+
+  function totalSeats() {
+    return grid.length ? grid.length * grid[0].length : 0;
+  }
+
+  function bookingList() {
+    return Object.keys(bookings).map(function (id) {
+      return { id: Number(id), seats: bookings[id] };
+    });
+  }
+
+  return {
+    setup: setup,
+    book: book,
+    cancel: cancel,
+    emptyCount: emptyCount,
+    totalSeats: totalSeats,
+    bookingList: bookingList,
+    seatName: seatName,
+    grid: function () { return grid; }
+  };
+})();
+
+/* =====================================================================
+   SCREEN - reads the boxes, calls the logic, redraws the page
+   ===================================================================== */
+var actionLog = [];   // { action, message, empty }
+var $ = function (id) { return document.getElementById(id); };
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, function (ch) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+  });
+}
+
+function shown(text) {
+  return String(text).trim() === "" ? "(blank)" : String(text).trim();
+}
+
+function messageType(message) {
+  if (/^(BOOKED|CINEMA SET)/.test(message)) return "ok";
+  if (/^CANCELLED/.test(message)) return "info";
+  return "error";
+}
+
+function newBookingId(message) {
+  var match = /^BOOKED (\d+):/.exec(message);
+  return match ? Number(match[1]) : 0;
+}
+
+function drawMap(highlightId) {
+  var html = "";
+  Cinema.grid().forEach(function (row, r) {
+    var letter = String.fromCharCode(65 + r);
+    html += '<div class="seat-row"><span class="row-label">' + letter + "</span>";
+    row.forEach(function (id, c) {
+      var name = Cinema.seatName(r, c);
+      if (id === 0) {
+        html += '<span class="seat" title="' + name + ' - empty">' + name + "</span>";
+      } else {
+        html += '<span class="seat booked' + (id === highlightId ? " new" : "") + '" data-id="' + id +
+                '" title="' + name + " - booking " + id + '">' + name + "<small>#" + id + "</small></span>";
+      }
+    });
+    html += '<span class="row-label">' + letter + "</span></div>";
+  });
+  $("map").innerHTML = html;
+}
+
+function drawSummary() {
+  var empty = Cinema.emptyCount();
+  $("empty").textContent = empty;
+  $("emptySub").textContent = "of " + Cinema.totalSeats() + " seats";
+}
+
+function drawBookings() {
+  var list = Cinema.bookingList();
+  $("bookings").innerHTML = list.length
+    ? list.map(function (b) {
+        return '<div class="bk" data-id="' + b.id + '"><b>#' + b.id + "</b>" + b.seats.join(" ") + "</div>";
+      }).join("")
+    : '<div class="none">None</div>';
+}
+
+function drawLastMessage(message) {
+  $("last").className = "message " + messageType(message);
+  $("lastText").textContent = message;
+}
+
+function drawHistory() {
+  $("history").innerHTML = actionLog.map(function (h, i) {
+    return "<tr><td>" + (i + 1) + "</td><td>" + escapeHtml(h.action) + '</td><td class="msg ' +
+           messageType(h.message) + '">' + h.message + "</td><td>" + h.empty + "</td></tr>";
+  }).join("");
+  var wrap = $("history").closest(".table-wrap");
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+// Record one action and refresh everything on screen.
+function show(action, message) {
+  actionLog.push({ action: action, message: message, empty: Cinema.emptyCount() });
+  drawLastMessage(message);
+  drawMap(newBookingId(message));
+  drawSummary();
+  drawBookings();
+  drawHistory();
+}
+
+function pickBooking(event) {
+  var target = event.target.closest("[data-id]");
+  if (!target) return;
+  $("cancelBox").value = target.getAttribute("data-id");
+  $("cancelBox").focus();
+}
+
+function onSubmit(formId, handler) {
+  $(formId).addEventListener("submit", function (event) {
+    event.preventDefault();
+    handler();
+  });
+}
+
+onSubmit("setupForm", function () {
+  var rows = $("rowsBox").value, seats = $("seatsBox").value;
+  show("Set " + shown(rows) + " rows, " + shown(seats) + " seats", Cinema.setup(rows, seats));
+});
+
+onSubmit("bookForm", function () {
+  var text = $("bookBox").value;
+  show("Book " + shown(text), Cinema.book(text));
+  $("bookBox").select();
+});
+
+onSubmit("cancelForm", function () {
+  var text = $("cancelBox").value;
+  show("Cancel " + shown(text), Cinema.cancel(text));
+  $("cancelBox").select();
+});
+
+$("map").addEventListener("click", pickBooking);
+$("bookings").addEventListener("click", pickBooking);
+
+// Start like the worked example: 3 rows, 5 seats each.
+show("Set 3 rows, 5 seats", Cinema.setup(3, 5));
+</script>
+</body>
+</html>
